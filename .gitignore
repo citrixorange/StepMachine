@@ -1,4 +1,7 @@
 semaphore/target/
 semaphore/Cargo.lock
+expression_evaluator/target/
+expression_evaluator/Cargo.lock
 step_machine/target/
 step_machine/Cargo.lock
+

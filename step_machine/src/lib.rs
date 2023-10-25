@@ -1,29 +1,45 @@
+use std::cmp::PartialEq;
+use std::fmt::Debug;
 use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
+use std::cell::RefCell;
 use std::rc::Rc;
 
 pub type StepLabel = i32;
+pub type StepError = i32;
 
-#[repr(i32)]
-pub enum StepMachineError {
-    InternalError = 0,
-    InexistentStep = 1,
-    StepError(i32)
+#[derive(Eq, PartialEq, Hash)]
+pub enum StepMachineLabel {
+    Done,
+    StepLabel(StepLabel)
 }
 
-pub type Step<T> = fn(Option<Rc<T>>, Option<Vec<Arc<RwLock<T>>>>) -> Result<Option<StepLabel>,StepMachineError>;
+#[derive(Eq, PartialEq)]
+pub enum StepMachineError {
+    InternalError,
+    InexistentStep,
+    StepError(StepError)
+}
 
-pub type ErrorHandler<T> = fn(StepLabel, StepMachineError, Option<Rc<T>>, Option<Vec<Arc<RwLock<T>>>>) -> StepMachineError;
+pub type Step<T> = fn(&mut Option<Rc<RefCell<T>>>, &mut Option<Vec<Arc<RwLock<T>>>>) -> Result<Option<StepMachineLabel>,StepMachineError>;
 
-pub struct StepMachine<T> {
-    sync_handler: Option<Rc<T>>,
+pub type ErrorHandler<T> = fn(StepLabel, StepMachineError, &mut Option<Rc<RefCell<T>>>, &mut Option<Vec<Arc<RwLock<T>>>>) -> StepMachineError;
+
+pub struct StepMachine<T> 
+where
+    T: Debug
+{
+    sync_handler: Option<Rc<RefCell<T>>>,
     async_handlers: Option<Vec<Arc<RwLock<T>>>>,
-    steps: HashMap<StepLabel,Step<T>>,
+    steps: HashMap<StepMachineLabel,Step<T>>,
     error_handler: Option<ErrorHandler<T>>
 }
 
-impl<T> StepMachine<T> {
-    pub fn new(sync_handler:Option<Rc<T>>, async_handlers:Option<Vec<Arc<RwLock<T>>>>, steps: Vec<(StepLabel,Step<T>)>, error_handler: Option<ErrorHandler<T>>) -> Self {
+impl<T> StepMachine<T> 
+where
+    T: Debug
+{
+    pub fn new(sync_handler:Option<Rc<RefCell<T>>>, async_handlers:Option<Vec<Arc<RwLock<T>>>>, steps: Vec<(StepMachineLabel,Step<T>)>, error_handler: Option<ErrorHandler<T>>) -> Self {
         Self {
             sync_handler: sync_handler,
             async_handlers: async_handlers,
@@ -32,42 +48,23 @@ impl<T> StepMachine<T> {
         }
     }
 
-    pub fn run(&mut self, beginning:StepLabel) -> Result<(),StepMachineError> {
+    pub fn run(&mut self, beginning:StepMachineLabel) -> Result<(),StepMachineError> {
         let mut last_step = beginning;
         if let Some(step) = self.steps.get(&last_step) {
 
-            let mut sync_handler = None;
-            let mut async_handlers = None;
-
-            if let Some(handler) = &self.sync_handler {
-                sync_handler = Some(Rc::clone(&handler));
-            }
-
-            if let Some(handler) = &self.async_handlers {
-                async_handlers = Some(handler.iter().cloned().collect());
-            }
-
-            let mut result = step(sync_handler, async_handlers);
+            let mut result = step(&mut self.sync_handler, &mut self.async_handlers);
 
             while let Ok(res) = result {
+
+                if res == Some(StepMachineLabel::Done) {
+                    return Ok(());
+                }
+
                 if let Some(next_step) = res {
 
                     if let Some(step) = self.steps.get(&next_step) {
-
                         last_step = next_step;
-
-                        let mut sync_handler = None;
-                        let mut async_handlers = None;
-            
-                        if let Some(handler) = &self.sync_handler {
-                            sync_handler = Some(Rc::clone(&handler));
-                        }
-            
-                        if let Some(handler) = &self.async_handlers {
-                            async_handlers = Some(handler.iter().cloned().collect());
-                        }
-
-                        result = step(sync_handler, async_handlers);
+                        result = step(&mut self.sync_handler, &mut self.async_handlers);
                     } else {
                         return Err(StepMachineError::InexistentStep);
                     }
@@ -79,18 +76,12 @@ impl<T> StepMachine<T> {
             if let Err(error_code) = result {
                 if let Some(err_handler) = self.error_handler {
 
-                    let mut sync_handler = None;
-                    let mut async_handlers = None;
-        
-                    if let Some(handler) = &self.sync_handler {
-                        sync_handler = Some(Rc::clone(&handler));
-                    }
-        
-                    if let Some(handler) = &self.async_handlers {
-                        async_handlers = Some(handler.iter().cloned().collect());
+                    if let StepMachineLabel::StepLabel(last_step_label) = last_step {
+                        return Err(err_handler(last_step_label,error_code,&mut self.sync_handler,&mut self.async_handlers));
+                    } else {
+                        return Err(StepMachineError::InternalError);
                     }
 
-                    return Err(err_handler(last_step,error_code,sync_handler,async_handlers));
                 }
                 return Err(error_code);
             } else {

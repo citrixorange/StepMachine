@@ -1,6 +1,6 @@
 extern crate step_machine;
 
-use step_machine::{StepLabel};
+use step_machine::{StepLabel, StepMachineLabel};
 
 #[repr(i32)]
 pub enum SemaphoreStates {
@@ -9,8 +9,8 @@ pub enum SemaphoreStates {
     Red = 2
 }
 
-impl From<SemaphoreStates> for StepLabel {
-    fn from(state: SemaphoreStates) -> StepLabel {
-        state as StepLabel
+impl From<SemaphoreStates> for StepMachineLabel {
+    fn from(state: SemaphoreStates) -> StepMachineLabel {
+        StepMachineLabel::StepLabel(state as StepLabel)
     }
 }
