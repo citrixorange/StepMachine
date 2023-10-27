@@ -1,6 +1,5 @@
 extern crate step_machine;
 
-use std::sync::{Arc, RwLock};
 use std::cell::RefCell;
 use std::rc::Rc;
 
@@ -21,7 +20,7 @@ impl From<ExpressionError> for StepMachineError {
     }
 }
 
-pub fn error_handler(last_step: StepLabel, step_error: StepMachineError, sync_handler: &mut Option<Rc<RefCell<Expression<u32>>>>, _async_handlers: &mut Option<Vec<Arc<RwLock<Expression<u32>>>>>) -> StepMachineError {
+pub fn error_handler(last_step: StepLabel, step_error: StepMachineError, handler: &mut Option<Rc<RefCell<Expression<u32>>>>) -> StepMachineError {
     
     let error: StepMachineError;
 
@@ -31,8 +30,8 @@ pub fn error_handler(last_step: StepLabel, step_error: StepMachineError, sync_ha
     
     else if last_step == ExpressionSteps::Subtract.into() {
         if step_error == ExpressionError::Underflow.into() {
-            if let Some(handler) = &sync_handler {
-                let mut expression = handler.borrow_mut();
+            if let Some(hand) = &handler {
+                let mut expression = hand.borrow_mut();
                 expression.result = Some(0);
             }
             error = step_error;
@@ -43,8 +42,8 @@ pub fn error_handler(last_step: StepLabel, step_error: StepMachineError, sync_ha
 
     else if last_step == ExpressionSteps::Multiply.into() {
         if step_error == ExpressionError::Overflow.into() {
-            if let Some(handler) = &sync_handler {
-                let mut expression = handler.borrow_mut();
+            if let Some(hand) = &handler {
+                let mut expression = hand.borrow_mut();
                 expression.result = Some(u32::MAX);
             }
             error = step_error;
@@ -55,8 +54,8 @@ pub fn error_handler(last_step: StepLabel, step_error: StepMachineError, sync_ha
 
     else if last_step == ExpressionSteps::Divide.into() {
         if step_error == ExpressionError::ZeroDivision.into() {
-            if let Some(handler) = &sync_handler {
-                let mut expression = handler.borrow_mut();
+            if let Some(hand) = &handler {
+                let mut expression = hand.borrow_mut();
                 expression.result = None;
             }
             error = step_error;

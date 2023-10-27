@@ -1,6 +1,5 @@
 extern crate step_machine;
 
-use std::sync::{Arc, RwLock};
 use std::cell::RefCell;
 use std::rc::Rc;
 
@@ -9,9 +8,9 @@ use crate::steps::labels::ExpressionSteps;
 use crate::steps::errors::ExpressionError;
 use crate::expression::expression::Expression;
 
-pub fn add(sync_handler: &mut Option<Rc<RefCell<Expression<u32>>>>, _async_handlers: &mut Option<Vec<Arc<RwLock<Expression<u32>>>>>) -> Result<Option<StepMachineLabel>,StepMachineError> {
-    if let Some(handler) = &sync_handler {
-        let mut expression = handler.borrow_mut();
+pub fn add(handler: &mut Option<Rc<RefCell<Expression<u32>>>>) -> Result<Option<StepMachineLabel>,StepMachineError> {
+    if let Some(hand) = &handler {
+        let mut expression = hand.borrow_mut();
         if let Some(add) = expression.add {
             expression.result = Some(add);
         }
@@ -21,9 +20,9 @@ pub fn add(sync_handler: &mut Option<Rc<RefCell<Expression<u32>>>>, _async_handl
     }
 }
 
-pub fn sub(sync_handler: &mut Option<Rc<RefCell<Expression<u32>>>>, _async_handlers: &mut Option<Vec<Arc<RwLock<Expression<u32>>>>>) -> Result<Option<StepMachineLabel>,StepMachineError> {
-    if let Some(handler) = &sync_handler {
-        let mut expression = handler.borrow_mut();
+pub fn sub(handler: &mut Option<Rc<RefCell<Expression<u32>>>>) -> Result<Option<StepMachineLabel>,StepMachineError> {
+    if let Some(hand) = &handler {
+        let mut expression = hand.borrow_mut();
         if let Some(sub) = expression.subtract {
             if let Some(result) = expression.result {
                 if result > sub {
@@ -41,9 +40,9 @@ pub fn sub(sync_handler: &mut Option<Rc<RefCell<Expression<u32>>>>, _async_handl
     }
 }
 
-pub fn mult(sync_handler: &mut Option<Rc<RefCell<Expression<u32>>>>, _async_handlers: &mut Option<Vec<Arc<RwLock<Expression<u32>>>>>) -> Result<Option<StepMachineLabel>,StepMachineError> {
-    if let Some(handler) = &sync_handler {
-        let mut expression = handler.borrow_mut();
+pub fn mult(handler: &mut Option<Rc<RefCell<Expression<u32>>>>) -> Result<Option<StepMachineLabel>,StepMachineError> {
+    if let Some(hand) = &handler {
+        let mut expression = hand.borrow_mut();
         if let Some(mult) = expression.multiply {
             if let Some(result) = expression.result {
                 match result.checked_mul(mult) {
@@ -62,9 +61,9 @@ pub fn mult(sync_handler: &mut Option<Rc<RefCell<Expression<u32>>>>, _async_hand
     }
 }
 
-pub fn div(sync_handler: &mut Option<Rc<RefCell<Expression<u32>>>>, _async_handlers: &mut Option<Vec<Arc<RwLock<Expression<u32>>>>>) -> Result<Option<StepMachineLabel>,StepMachineError> {
-    if let Some(handler) = &sync_handler {
-        let mut expression = handler.borrow_mut();
+pub fn div(handler: &mut Option<Rc<RefCell<Expression<u32>>>>) -> Result<Option<StepMachineLabel>,StepMachineError> {
+    if let Some(hand) = &handler {
+        let mut expression = hand.borrow_mut();
         if let Some(divide) = expression.divide {
             if let Some(result) = expression.result {
                 if divide == 0 {

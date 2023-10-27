@@ -8,11 +8,11 @@ mod steps;
 
 fn main() {
     let steps:Vec<(StepMachineLabel,Step<i32>)>  = vec![
-        (SemaphoreStates::Green.into(), |x,y| green(x,y)),
-        (SemaphoreStates::Yellow.into(), |x,y| yellow(x,y)),
-        (SemaphoreStates::Red.into(), |x,y| red(x,y))
+        (SemaphoreStates::Green.into(), |x| green(x)),
+        (SemaphoreStates::Yellow.into(), |x| yellow(x)),
+        (SemaphoreStates::Red.into(), |x| red(x))
     ];
 
-    let mut step_machine = StepMachine::<i32>::new(None, None, steps, None);
+    let mut step_machine = StepMachine::<i32>::new(None, steps, None);
     let _ = step_machine.run(SemaphoreStates::Green.into());
 }

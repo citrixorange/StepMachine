@@ -1,7 +1,6 @@
 use std::cmp::PartialEq;
 use std::fmt::Debug;
 use std::collections::HashMap;
-use std::sync::{Arc, RwLock};
 use std::cell::RefCell;
 use std::rc::Rc;
 
@@ -21,16 +20,15 @@ pub enum StepMachineError {
     StepError(StepError)
 }
 
-pub type Step<T> = fn(&mut Option<Rc<RefCell<T>>>, &mut Option<Vec<Arc<RwLock<T>>>>) -> Result<Option<StepMachineLabel>,StepMachineError>;
+pub type Step<T> = fn(&mut Option<Rc<RefCell<T>>>) -> Result<Option<StepMachineLabel>,StepMachineError>;
 
-pub type ErrorHandler<T> = fn(StepLabel, StepMachineError, &mut Option<Rc<RefCell<T>>>, &mut Option<Vec<Arc<RwLock<T>>>>) -> StepMachineError;
+pub type ErrorHandler<T> = fn(StepLabel, StepMachineError, &mut Option<Rc<RefCell<T>>>) -> StepMachineError;
 
 pub struct StepMachine<T> 
 where
     T: Debug
 {
-    sync_handler: Option<Rc<RefCell<T>>>,
-    async_handlers: Option<Vec<Arc<RwLock<T>>>>,
+    handler: Option<Rc<RefCell<T>>>,
     steps: HashMap<StepMachineLabel,Step<T>>,
     error_handler: Option<ErrorHandler<T>>
 }
@@ -39,10 +37,9 @@ impl<T> StepMachine<T>
 where
     T: Debug
 {
-    pub fn new(sync_handler:Option<Rc<RefCell<T>>>, async_handlers:Option<Vec<Arc<RwLock<T>>>>, steps: Vec<(StepMachineLabel,Step<T>)>, error_handler: Option<ErrorHandler<T>>) -> Self {
+    pub fn new(handler:Option<Rc<RefCell<T>>>, steps: Vec<(StepMachineLabel,Step<T>)>, error_handler: Option<ErrorHandler<T>>) -> Self {
         Self {
-            sync_handler: sync_handler,
-            async_handlers: async_handlers,
+            handler: handler,
             steps: steps.into_iter().collect(),
             error_handler: error_handler
         }
@@ -52,7 +49,7 @@ where
         let mut last_step = beginning;
         if let Some(step) = self.steps.get(&last_step) {
 
-            let mut result = step(&mut self.sync_handler, &mut self.async_handlers);
+            let mut result = step(&mut self.handler);
 
             while let Ok(res) = result {
 
@@ -64,7 +61,7 @@ where
 
                     if let Some(step) = self.steps.get(&next_step) {
                         last_step = next_step;
-                        result = step(&mut self.sync_handler, &mut self.async_handlers);
+                        result = step(&mut self.handler);
                     } else {
                         return Err(StepMachineError::InexistentStep);
                     }
@@ -77,7 +74,7 @@ where
                 if let Some(err_handler) = self.error_handler {
 
                     if let StepMachineLabel::StepLabel(last_step_label) = last_step {
-                        return Err(err_handler(last_step_label,error_code,&mut self.sync_handler,&mut self.async_handlers));
+                        return Err(err_handler(last_step_label,error_code,&mut self.handler));
                     } else {
                         return Err(StepMachineError::InternalError);
                     }
