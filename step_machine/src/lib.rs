@@ -46,47 +46,34 @@ where
     }
 
     pub fn run(&mut self, beginning:StepMachineLabel) -> Result<(),StepMachineError> {
+
         let mut last_step = beginning;
-        if let Some(step) = self.steps.get(&last_step) {
 
-            let mut result = step(&mut self.handler);
+        while let Some(step) = self.steps.get(&last_step) {
 
-            while let Ok(res) = result {
+            match step(&mut self.handler) {
 
-                if res == Some(StepMachineLabel::Done) {
-                    return Ok(());
+                Ok(Some(StepMachineLabel::Done)) => return Ok(()),
+
+                Ok(Some(next_step)) => {
+                    last_step = next_step;
                 }
 
-                if let Some(next_step) = res {
-
-                    if let Some(step) = self.steps.get(&next_step) {
-                        last_step = next_step;
-                        result = step(&mut self.handler);
-                    } else {
-                        return Err(StepMachineError::InexistentStep);
+                Ok(None) => return Ok(()),
+                
+                Err(error_code) => {
+                    if let Some(err_handler) = self.error_handler {
+                        if let StepMachineLabel::StepLabel(last_step_label) = last_step {
+                            return Err(err_handler(last_step_label, error_code, &mut self.handler));
+                        } else {
+                            return Err(StepMachineError::InternalError);
+                        }
                     }
-                } else {
-                    return Ok(());
+                    return Err(error_code);
                 }
             }
-
-            if let Err(error_code) = result {
-                if let Some(err_handler) = self.error_handler {
-
-                    if let StepMachineLabel::StepLabel(last_step_label) = last_step {
-                        return Err(err_handler(last_step_label,error_code,&mut self.handler));
-                    } else {
-                        return Err(StepMachineError::InternalError);
-                    }
-
-                }
-                return Err(error_code);
-            } else {
-                return Err(StepMachineError::InternalError);
-            }
-
-        } else {
-            return Err(StepMachineError::InexistentStep);
         }
+    
+        return Err(StepMachineError::InexistentStep);
     }
 }
