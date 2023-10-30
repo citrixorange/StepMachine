@@ -1,5 +1,5 @@
 [package]
-name = "step_machine"
+name = "sync_step_machine"
 version = "0.1.0"
 edition = "2021"
 description = "A Simple Step Machine to improve code maintenance."
