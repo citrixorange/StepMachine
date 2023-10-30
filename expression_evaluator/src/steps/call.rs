@@ -1,9 +1,9 @@
-extern crate step_machine;
+extern crate sync_step_machine;
 
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use step_machine::{StepMachineLabel, StepMachineError};
+use sync_step_machine::{StepMachineLabel, StepMachineError};
 use crate::steps::labels::ExpressionSteps;
 use crate::steps::errors::ExpressionError;
 use crate::expression::expression::Expression;

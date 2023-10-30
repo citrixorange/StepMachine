@@ -1,6 +1,6 @@
-extern crate step_machine;
+extern crate sync_step_machine;
 
-use step_machine::{StepLabel, StepMachineLabel};
+use sync_step_machine::{StepLabel, StepMachineLabel};
 
 #[repr(i32)]
 pub enum ExpressionSteps {

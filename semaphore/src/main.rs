@@ -1,6 +1,6 @@
-extern crate step_machine;
+extern crate sync_step_machine;
 
-use step_machine::{StepMachineLabel, Step, StepMachine};
+use sync_step_machine::{StepMachineLabel, Step, StepMachine};
 use crate::steps::labels::SemaphoreStates;
 use crate::steps::call::{green, yellow, red};
 

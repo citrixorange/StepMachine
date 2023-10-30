@@ -1,10 +1,10 @@
-extern crate step_machine;
+extern crate sync_step_machine;
 
 use std::cell::RefCell;
 use std::rc::Rc;
 use std::thread;
 use std::time::Duration;
-use step_machine::{StepMachineLabel, StepMachineError};
+use sync_step_machine::{StepMachineLabel, StepMachineError};
 use crate::steps::labels::SemaphoreStates;
 
 pub fn green(_handler: &mut Option<Rc<RefCell<i32>>>) -> Result<Option<StepMachineLabel>,StepMachineError> {
